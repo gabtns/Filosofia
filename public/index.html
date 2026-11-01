@@ -253,30 +253,63 @@ function saveState(){
   try { localStorage.setItem('phil_state',JSON.stringify({books:state.books,sessions:state.sessions,reviewQueue:state.reviewQueue})); } catch(e){}
 }
 
+// ===== GENERIC QUESTION TEMPLATES (for books without pre-loaded concepts) =====
+const GENERIC_TEMPLATES = [
+  { type:'conceptual', label:'Conceptual',
+    gen:(a,t)=>`¿Cuáles son los conceptos fundamentales que ${a} desarrolla en "${t}"?` },
+  { type:'argumentativa', label:'Argumentativa',
+    gen:(a,t)=>`¿Cuál es la tesis principal que ${a} sostiene en "${t}" y con qué argumentos la defiende?` },
+  { type:'critica', label:'Crítica',
+    gen:(a,t)=>`¿Qué objeciones podrían plantearse a la posición de ${a} en "${t}"?` },
+  { type:'comparativa', label:'Comparativa',
+    gen:(a,t)=>`¿Cómo se relaciona el pensamiento de ${a} en "${t}" con otras corrientes filosóficas?` },
+  { type:'definicional', label:'Definicional',
+    gen:(a,t)=>`Explicá el marco teórico que ${a} propone en "${t}".` },
+  { type:'conceptual', label:'Conceptual',
+    gen:(a,t)=>`¿Qué problema filosófico intenta resolver ${a} en "${t}"?` },
+  { type:'argumentativa', label:'Argumentativa',
+    gen:(a,t)=>`¿Qué método utiliza ${a} en "${t}" para fundamentar su posición?` },
+  { type:'critica', label:'Crítica',
+    gen:(a,t)=>`¿Cuáles son las fortalezas y debilidades del argumento de ${a} en "${t}"?` },
+  { type:'comparativa', label:'Comparativa',
+    gen:(a,t)=>`¿En qué contexto histórico-filosófico se inscribe "${t}" de ${a}?` },
+  { type:'definicional', label:'Definicional',
+    gen:(a,t)=>`¿Qué consecuencias filosóficas se derivan de la propuesta de ${a} en "${t}"?` }
+];
+
 // ===== QUESTION GENERATION =====
-function generateQuestion(book, section){
-  const sec = book.sections.find(s=>s.id===section);
-  if(!sec) return null;
-  const concepts = sec.concepts;
-  const tIdx = Math.floor(Math.random()*Q_TEMPLATES.length);
-  const tmpl = Q_TEMPLATES[tIdx];
-  let text, expected;
-  if(tmpl.type==='comparativa'){
-    const shuffled = [...concepts].sort(()=>Math.random()-0.5);
-    const c1=shuffled[0], c2=shuffled[1];
-    text = tmpl.gen(book.author, sec.name, c1, c2);
-    expected = [c1, c2, ...concepts.slice(0,3)];
-  } else if(tmpl.type==='argumentativa'){
-    text = tmpl.gen(book.author, sec.name);
-    expected = concepts.slice(0, Math.min(5, concepts.length));
-  } else {
-    const c = concepts[Math.floor(Math.random()*concepts.length)];
-    text = tmpl.gen(book.author, sec.name, c);
-    expected = [c, ...concepts.filter(x=>x!==c).slice(0,3)];
+function generateQuestion(book){
+  // If book has sections with concepts, pick a random section
+  const sectionsWithConcepts = (book.sections||[]).filter(s=>s.concepts&&s.concepts.length>0);
+  if(sectionsWithConcepts.length>0){
+    const sec = sectionsWithConcepts[Math.floor(Math.random()*sectionsWithConcepts.length)];
+    const concepts = sec.concepts;
+    const tIdx = Math.floor(Math.random()*Q_TEMPLATES.length);
+    const tmpl = Q_TEMPLATES[tIdx];
+    let text, expected;
+    if(tmpl.type==='comparativa'){
+      const shuffled = [...concepts].sort(()=>Math.random()-0.5);
+      const c1=shuffled[0], c2=shuffled[1]||shuffled[0];
+      text = tmpl.gen(book.author, sec.name, c1, c2);
+      expected = [c1, c2, ...concepts.slice(0,3)];
+    } else if(tmpl.type==='argumentativa'){
+      text = tmpl.gen(book.author, sec.name);
+      expected = concepts.slice(0, Math.min(5, concepts.length));
+    } else {
+      const c = concepts[Math.floor(Math.random()*concepts.length)];
+      text = tmpl.gen(book.author, sec.name, c);
+      expected = [c, ...concepts.filter(x=>x!==c).slice(0,3)];
+    }
+    return { text, type:tmpl.type, typeLabel:tmpl.label, expectedConcepts:[...new Set(expected)],
+      bookId:book.id, sectionId:sec.id, bookTitle:book.title, sectionName:sec.name, author:book.author,
+      relations:sec.relations, allConcepts:sec.concepts };
   }
-  return { text, type:tmpl.type, typeLabel:tmpl.label, expectedConcepts:[...new Set(expected)],
-    bookId:book.id, sectionId:sec.id, bookTitle:book.title, sectionName:sec.name, author:book.author,
-    relations:sec.relations, allConcepts:sec.concepts };
+  // Generic questions for books without pre-loaded concepts
+  const tmpl = GENERIC_TEMPLATES[Math.floor(Math.random()*GENERIC_TEMPLATES.length)];
+  const text = tmpl.gen(book.author, book.title);
+  return { text, type:tmpl.type, typeLabel:tmpl.label, expectedConcepts:[],
+    bookId:book.id, sectionId:'general', bookTitle:book.title, sectionName:'General', author:book.author,
+    relations:[], allConcepts:[] };
 }
 
 // ===== EVALUATION =====
@@ -409,12 +442,10 @@ function renderEstudio(){
   if(due.length){
     html+=`<div class="review-alert">⏰ Tenés <strong>${due.length}</strong> pregunta(s) pendientes de repaso espaciado. <button class="btn btn-sm btn-accent" onclick="startReview()">Repasar</button></div>`;
   }
-  // Book/section selector
   html+=`<div class="card"><h2>Seleccionar tema de estudio</h2>`;
   html+=`<div class="form-group"><label>Libro</label><select id="bookSelect" onchange="onBookChange()"><option value="">— Elegí un libro —</option>`;
   for(const b of state.books) html+=`<option value="${b.id}">${b.title} — ${b.author}</option>`;
   html+=`</select></div>`;
-  html+=`<div class="form-group"><label>Sección</label><select id="sectionSelect" disabled><option value="">— Primero elegí un libro —</option></select></div>`;
   html+=`<button class="btn btn-primary" onclick="startQuestion()" id="startBtn" disabled>Generar pregunta</button>`;
   html+=`</div>`;
   // Question area
@@ -424,14 +455,8 @@ function renderEstudio(){
 
 function onBookChange(){
   const sel = document.getElementById('bookSelect').value;
-  const secSel = document.getElementById('sectionSelect');
   const startBtn = document.getElementById('startBtn');
-  if(!sel){ secSel.innerHTML='<option value="">— Primero elegí un libro —</option>'; secSel.disabled=true; startBtn.disabled=true; return; }
-  const book = state.books.find(b=>b.id===sel);
-  secSel.innerHTML='<option value="">— Elegí una sección —</option>';
-  for(const s of book.sections) secSel.innerHTML+=`<option value="${s.id}">${s.name}</option>`;
-  secSel.disabled=false;
-  secSel.onchange=()=>{ startBtn.disabled=!secSel.value; };
+  startBtn.disabled=!sel;
 }
 
 function startQuestion(reviewQ){
@@ -439,10 +464,9 @@ function startQuestion(reviewQ){
   if(reviewQ){ q=reviewQ; }
   else {
     const bookId=document.getElementById('bookSelect').value;
-    const secId=document.getElementById('sectionSelect').value;
-    if(!bookId||!secId) return;
+    if(!bookId) return;
     const book=state.books.find(b=>b.id===bookId);
-    q=generateQuestion(book,secId);
+    q=generateQuestion(book);
   }
   if(!q) return;
   state.currentQ=q;
@@ -529,8 +553,7 @@ function renderBiblioteca(){
   const el=document.getElementById('viewBiblioteca');
   let html=`<div class="card"><h2>Biblioteca</h2><p style="color:var(--muted);margin-bottom:16px">Libros cargados para el estudio. Podés agregar nuevos.</p>`;
   for(const b of state.books){
-    html+=`<div class="book-item"><div class="info"><h3>${b.title}</h3><p>${b.author} — ${b.sections.length} secciones</p>
-      <ul class="section-list">${b.sections.map(s=>`<li>${s.name} <span style="color:var(--muted);font-size:0.8em">(${s.concepts.length} conceptos)</span></li>`).join('')}</ul>
+    html+=`<div class="book-item"><div class="info"><h3>${b.title}</h3><p>${b.author}</p>
     </div></div>`;
   }
   html+=`</div>`;
@@ -538,9 +561,6 @@ function renderBiblioteca(){
   html+=`<div class="card"><h2>Agregar libro</h2>
     <div class="form-group"><label>Título</label><input type="text" id="newBookTitle" placeholder="Título del libro"></div>
     <div class="form-group"><label>Autor</label><input type="text" id="newBookAuthor" placeholder="Nombre del autor"></div>
-    <div class="form-group"><label>Secciones / Capítulos (uno por línea)</label>
-      <textarea id="newBookSections" placeholder="Parte I: Introducción&#10;Parte II: Desarrollo&#10;Capítulo III: Conclusiones" style="min-height:150px"></textarea>
-    </div>
     <button class="btn btn-primary" onclick="addBook()">Agregar libro</button>
   </div>`;
   el.innerHTML=html;
@@ -549,15 +569,8 @@ function renderBiblioteca(){
 function addBook(){
   const title=document.getElementById('newBookTitle').value.trim();
   const author=document.getElementById('newBookAuthor').value.trim();
-  const secText=document.getElementById('newBookSections').value.trim();
-  if(!title||!author||!secText) return;
-  const sections=[];
-  for(const line of secText.split('\n')){
-    const name=line.trim();
-    if(name) sections.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name, concepts:[], relations:[] });
-  }
-  if(!sections.length) return;
-  state.books.push({ id:'b'+Date.now(), title, author, sections });
+  if(!title||!author) return;
+  state.books.push({ id:'b'+Date.now(), title, author, sections:[] });
   saveState();
   renderBiblioteca();
 }
