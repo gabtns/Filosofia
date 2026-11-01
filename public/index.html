@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asistente de Filosofía</title>
+<style>
+:root {
+  --bg: #f5f1eb; --card: #ffffff; --primary: #1a365d; --accent: #b8860b;
+  --text: #2d3748; --muted: #718096; --border: #e2d9cc; --success: #276749;
+  --warning: #c05621; --danger: #9b2c2c; --light: #faf8f5;
+  --radius: 10px; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+h1,h2,h3 { font-family: Georgia, 'Times New Roman', serif; color:var(--primary); }
+.app { max-width:960px; margin:0 auto; padding:16px; }
+header { text-align:center; padding:24px 0 16px; border-bottom:2px solid var(--accent); margin-bottom:20px; }
+header h1 { font-size:1.8em; margin-bottom:4px; }
+header p { color:var(--muted); font-size:0.95em; }
+nav { display:flex; gap:0; margin-bottom:24px; border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); }
+nav button { flex:1; padding:12px; border:none; background:var(--card); color:var(--muted); font-size:0.95em; cursor:pointer; transition:all 0.2s; font-weight:500; }
+nav button.active { background:var(--primary); color:#fff; }
+nav button:hover:not(.active) { background:var(--light); color:var(--primary); }
+.card { background:var(--card); border-radius:var(--radius); padding:24px; margin-bottom:16px; box-shadow:var(--shadow); border:1px solid var(--border); }
+.card h2 { margin-bottom:16px; font-size:1.3em; }
+.card h3 { margin-bottom:12px; font-size:1.1em; }
+select, input[type="text"], textarea {
+  width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:6px;
+  font-size:0.95em; background:var(--light); color:var(--text); font-family:inherit;
+}
+select:focus, input:focus, textarea:focus { outline:none; border-color:var(--accent); }
+textarea { resize:vertical; min-height:120px; }
+label { display:block; font-weight:600; margin-bottom:6px; font-size:0.9em; color:var(--primary); }
+.form-group { margin-bottom:16px; }
+.btn {
+  display:inline-flex; align-items:center; gap:6px; padding:10px 20px; border:none;
+  border-radius:6px; font-size:0.9em; cursor:pointer; font-weight:600; transition:all 0.2s;
+}
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:#2a4a7f; }
+.btn-accent { background:var(--accent); color:#fff; }
+.btn-accent:hover { background:#9a7209; }
+.btn-outline { background:transparent; border:2px solid var(--primary); color:var(--primary); }
+.btn-outline:hover { background:var(--primary); color:#fff; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-sm { padding:6px 12px; font-size:0.85em; }
+.btn:disabled { opacity:0.5; cursor:not-allowed; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+.badge {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.78em; font-weight:600;
+}
+.badge-gold { background:#fef3c7; color:#92400e; }
+.badge-blue { background:#dbeafe; color:#1e40af; }
+.badge-green { background:#d1fae5; color:#065f46; }
+.badge-red { background:#fee2e2; color:#991b1b; }
+.badge-purple { background:#ede9fe; color:#5b21b6; }
+.tag-row { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.question-box {
+  background:linear-gradient(135deg, var(--primary), #2a4a7f); color:#fff;
+  padding:24px; border-radius:var(--radius); margin-bottom:16px; position:relative;
+}
+.question-box p { font-size:1.1em; line-height:1.6; }
+.question-box .q-type { font-size:0.8em; opacity:0.8; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px; }
+.answer-area { position:relative; }
+.mic-btn {
+  position:absolute; right:12px; bottom:12px; width:40px; height:40px;
+  border-radius:50%; border:none; background:var(--accent); color:#fff;
+  font-size:1.2em; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:all 0.2s;
+}
+.mic-btn:hover { transform:scale(1.1); }
+.mic-btn.recording { background:var(--danger); animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.15)} }
+.speak-btn {
+  position:absolute; right:12px; top:12px; background:rgba(255,255,255,0.2);
+  border:1px solid rgba(255,255,255,0.4); color:#fff; border-radius:20px;
+  padding:4px 12px; font-size:0.8em; cursor:pointer;
+}
+.speak-btn:hover { background:rgba(255,255,255,0.3); }
+.eval-result {
+  padding:20px; border-radius:var(--radius); margin-top:16px; border-left:4px solid;
+}
+.eval-excelente { background:#d1fae5; border-color:var(--success); }
+.eval-buena { background:#dbeafe; border-color:#2563eb; }
+.eval-regular { background:#fef3c7; border-color:var(--warning); }
+.eval-insuficiente { background:#fee2e2; border-color:var(--danger); }
+.eval-result h3 { margin-bottom:8px; }
+.concept-map {
+  background:var(--light); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; margin-top:16px; overflow-x:auto;
+}
+.concept-map svg text { font-family:'Segoe UI',system-ui,sans-serif; }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; margin-bottom:20px; }
+.stat-card {
+  background:var(--light); border:1px solid var(--border); border-radius:8px;
+  padding:16px; text-align:center;
+}
+.stat-card .num { font-size:1.8em; font-weight:700; color:var(--primary); }
+.stat-card .lbl { font-size:0.8em; color:var(--muted); margin-top:4px; }
+.history-item {
+  padding:12px; border-bottom:1px solid var(--border); display:flex; gap:12px; align-items:flex-start;
+}
+.history-item:last-child { border-bottom:none; }
+.history-item .dot { width:10px; height:10px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+.history-item .content { flex:1; }
+.history-item .meta { font-size:0.8em; color:var(--muted); }
+.book-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px;
+  background:var(--light);
+}
+.book-item .info h3 { font-size:1em; margin-bottom:2px; }
+.book-item .info p { font-size:0.85em; color:var(--muted); }
+.section-list { margin-left:20px; margin-top:8px; }
+.section-list li { font-size:0.9em; color:var(--text); padding:2px 0; list-style:disc; }
+.hidden { display:none !important; }
+.empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
+.empty-state h3 { color:var(--muted); margin-bottom:8px; }
+.chart-bar-container { margin-top:16px; }
+.chart-bar { display:flex; align-items:center; margin-bottom:8px; gap:8px; }
+.chart-bar .label { width:100px; font-size:0.85em; text-align:right; flex-shrink:0; }
+.chart-bar .bar-bg { flex:1; height:24px; background:var(--border); border-radius:4px; overflow:hidden; }
+.chart-bar .bar-fill { height:100%; border-radius:4px; transition:width 0.5s; }
+.chart-bar .val { width:40px; font-size:0.85em; font-weight:600; }
+.tab-sub { display:flex; gap:4px; margin-bottom:16px; }
+.tab-sub button { padding:6px 14px; border:1px solid var(--border); background:var(--card); border-radius:20px; font-size:0.85em; cursor:pointer; color:var(--muted); }
+.tab-sub button.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+.review-alert { background:#fef3c7; border:1px solid #f59e0b; border-radius:8px; padding:12px 16px; margin-bottom:16px; display:flex; align-items:center; gap:8px; font-size:0.9em; }
+.flex-between { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+@media(max-width:600px) {
+  .app { padding:10px; }
+  header h1 { font-size:1.4em; }
+  .stats-grid { grid-template-columns:repeat(2,1fr); }
+  .card { padding:16px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Asistente de Filosofía</h1>
+    <p>Estudio guiado con evaluación y seguimiento del aprendizaje</p>
+  </header>
+  <nav id="mainNav">
+    <button class="active" onclick="showView('estudio')">Estudio</button>
+    <button onclick="showView('biblioteca')">Biblioteca</button>
+    <button onclick="showView('informes')">Informes</button>
+  </nav>
+  <div id="viewEstudio"></div>
+  <div id="viewBiblioteca" class="hidden"></div>
+  <div id="viewInformes" class="hidden"></div>
+</div>
+<script>
+// ===== DATA =====
+const DEFAULT_BOOKS = [
+  {
+    id:'spinoza-etica', title:'Ética demostrada según el orden geométrico', author:'Baruch Spinoza',
+    sections:[
+      { id:'e1', name:'Parte I: De Dios',
+        concepts:['sustancia','atributo','modo','causa sui','Dios','naturaleza','necesidad','infinito','extensión','pensamiento'],
+        relations:[['sustancia','es','causa sui'],['sustancia','se expresa en','atributos'],['atributos','se manifiestan como','modos'],['Dios','equivale a','naturaleza (Deus sive Natura)'],['sustancia','es','infinita y única'],['extensión','es un','atributo'],['pensamiento','es un','atributo']]
+      },
+      { id:'e2', name:'Parte II: De la naturaleza y origen del alma',
+        concepts:['alma','cuerpo','idea','paralelismo','conocimiento','imaginación','razón','ciencia intuitiva','idea adecuada','idea inadecuada'],
+        relations:[['alma','es','idea del cuerpo'],['cuerpo','corresponde a','alma (paralelismo)'],['imaginación','produce','ideas inadecuadas'],['razón','produce','ideas adecuadas'],['ciencia intuitiva','es el','tercer género de conocimiento'],['conocimiento','tiene','tres géneros']]
+      },
+      { id:'e3', name:'Parte III: Del origen y naturaleza de los afectos',
+        concepts:['conatus','deseo','alegría','tristeza','afecto','potencia de obrar','pasión','acción','imitación de afectos'],
+        relations:[['conatus','es','esfuerzo por perseverar en el ser'],['alegría','aumenta','potencia de obrar'],['tristeza','disminuye','potencia de obrar'],['deseo','es','conatus consciente'],['pasiones','son','afectos pasivos'],['acciones','son','afectos activos'],['imitación','reproduce','afectos ajenos']]
+      },
+      { id:'e4', name:'Parte IV: De la servidumbre humana',
+        concepts:['bien','mal','servidumbre','virtud','razón','apetito','utilidad','sociedad','libertad','impotencia'],
+        relations:[['servidumbre','es','impotencia ante los afectos'],['virtud','equivale a','potencia de obrar según razón'],['bien','es lo que','aumenta nuestra potencia'],['mal','es lo que','disminuye nuestra potencia'],['razón','guía hacia','utilidad común'],['sociedad','surge de','utilidad racional']]
+      },
+      { id:'e5', name:'Parte V: Del poder del entendimiento o de la libertad humana',
+        concepts:['entendimiento','amor intelectual de Dios','eternidad','beatitud','libertad','afectos activos','tercer género de conocimiento','remedio de los afectos'],
+        relations:[['entendimiento','produce','afectos activos'],['amor intelectual','se dirige a','Dios/Naturaleza'],['beatitud','es','virtud misma, no premio'],['tercer género','conduce a','amor intelectual de Dios'],['libertad','consiste en','obrar por necesidad de la propia naturaleza'],['remedio','consiste en','entender los afectos']]
+      }
+    ]
+  },
+  {
+    id:'spinoza-ttp', title:'Tratado teológico-político', author:'Baruch Spinoza',
+    sections:[
+      { id:'ttp1', name:'Cap. I-IV: Profecía, profetas y ley divina',
+        concepts:['profecía','imaginación','revelación','ley divina','ley natural','certeza moral','certeza matemática','Moisés','signo'],
+        relations:[['profecía','depende de','imaginación'],['revelación','no requiere','entendimiento filosófico'],['ley divina','coincide con','ley natural'],['certeza moral','difiere de','certeza matemática'],['profetas','conocen por','signos e imaginación']]
+      },
+      { id:'ttp2', name:'Cap. V-X: Ceremonias, Estado hebreo e interpretación',
+        concepts:['ceremonia','Estado teocrático','historia sagrada','método de interpretación','razón','Escritura','obediencia','piedad','teocracia'],
+        relations:[['ceremonias','no son','ley divina universal'],['Estado hebreo','fue','teocracia'],['interpretación','debe partir de','la Escritura misma'],['método','es análogo al','estudio de la naturaleza'],['obediencia','es el fin de','las ceremonias']]
+      },
+      { id:'ttp3', name:'Cap. XI-XV: Autoridad de la Escritura y fe universal',
+        concepts:['apóstol','enseñanza moral','piedad','obediencia','dogmas de fe universal','fe','teología','filosofía','separación'],
+        relations:[['teología','se separa de','filosofía'],['fe','exige','obediencia y piedad'],['dogmas universales','son','mínimos para la salvación'],['Escritura','enseña','obediencia, no ciencia'],['filosofía','busca','verdad racional']]
+      },
+      { id:'ttp4', name:'Cap. XVI-XX: Derecho natural, Estado y libertad',
+        concepts:['derecho natural','contrato social','democracia','libertad de pensamiento','soberanía','tolerancia','Estado','poder','sedición'],
+        relations:[['derecho natural','equivale a','potencia'],['contrato social','funda el','Estado'],['democracia','es la forma más','natural de gobierno'],['libertad de pensamiento','no amenaza al','Estado'],['soberanía','debe garantizar','libertad de filosofar'],['intolerancia','genera','sedición']]
+      }
+    ]
+  },
+  {
+    id:'aristoteles-alma', title:'Sobre el alma (De Anima)', author:'Aristóteles',
+    sections:[
+      { id:'da1', name:'Libro I: Investigaciones previas sobre el alma',
+        concepts:['alma','vida','método','opiniones previas','armonía','movimiento','elementos','dificultad','afecciones','cuerpo'],
+        relations:[['alma','es principio de','vida'],['opiniones previas','incluyen','alma como armonía'],['alma','se relaciona con','cuerpo'],['método','debe definir','qué es el alma'],['afecciones','son comunes a','alma y cuerpo'],['movimiento','fue atribuido al','alma por algunos']]
+      },
+      { id:'da2', name:'Libro II: Definición del alma y facultades',
+        concepts:['forma','acto','potencia','entelequia','facultades','nutrición','sensación','causa','materia','ser vivo'],
+        relations:[['alma','es','forma/acto del cuerpo'],['alma','es','entelequia primera de un cuerpo natural orgánico'],['facultades','incluyen','nutrición, sensación, intelecto'],['alma','es causa','formal, eficiente y final'],['potencia','se actualiza en','acto'],['sensación','requiere','objeto sensible externo']]
+      },
+      { id:'da3', name:'Libro III: Intelecto, imaginación y deseo',
+        concepts:['imaginación','intelecto agente','intelecto paciente','nous','deseo','movimiento','phantasia','inteligibles','voluntad','deliberación'],
+        relations:[['intelecto agente','actualiza','inteligibles'],['intelecto paciente','recibe','formas inteligibles'],['imaginación','es distinta de','sensación e intelecto'],['phantasia','media entre','sensación y pensamiento'],['deseo','produce','movimiento animal'],['nous','es','separable e impasible']]
+      }
+    ]
+  }
+];
+
+const Q_TEMPLATES = [
+  { type:'conceptual', label:'Conceptual',
+    gen:(a,s,c)=>`¿Qué entiende ${a} por "${c}" en ${s}?` },
+  { type:'argumentativa', label:'Argumentativa',
+    gen:(a,s)=>`¿Cuál es el argumento central que desarrolla ${a} en ${s}?` },
+  { type:'comparativa', label:'Comparativa',
+    gen:(a,s,c1,c2)=>`¿Cómo se relacionan los conceptos de "${c1}" y "${c2}" según ${a} en ${s}?` },
+  { type:'critica', label:'Crítica',
+    gen:(a,s,c)=>`¿Qué objeciones podrían plantearse a la posición de ${a} sobre "${c}" en ${s}?` },
+  { type:'definicional', label:'Definicional',
+    gen:(a,s,c)=>`Definí el concepto de "${c}" tal como lo presenta ${a} en ${s}.` }
+];
+
+const ARG_MARKERS = ['porque','ya que','dado que','puesto que','en tanto','por lo tanto','por consiguiente',
+  'en consecuencia','de modo que','así pues','sin embargo','no obstante','aunque','a pesar de',
+  'según','para','implica','se sigue','es decir','esto significa','en otras palabras'];
+
+// ===== STATE =====
+let state = {
+  view:'estudio', books:[], sessions:[], currentQ:null, currentBook:null, currentSection:null,
+  isRecording:false, reviewQueue:[], subTab:'historial'
+};
+
+function loadState(){
+  try {
+    const s = localStorage.getItem('phil_state');
+    if(s){ const d=JSON.parse(s); state.books=d.books||[]; state.sessions=d.sessions||[]; state.reviewQueue=d.reviewQueue||[]; }
+  } catch(e){}
+  if(!state.books.length) state.books = JSON.parse(JSON.stringify(DEFAULT_BOOKS));
+}
+function saveState(){
+  try { localStorage.setItem('phil_state',JSON.stringify({books:state.books,sessions:state.sessions,reviewQueue:state.reviewQueue})); } catch(e){}
+}
+
+// ===== QUESTION GENERATION =====
+function generateQuestion(book, section){
+  const sec = book.sections.find(s=>s.id===section);
+  if(!sec) return null;
+  const concepts = sec.concepts;
+  const tIdx = Math.floor(Math.random()*Q_TEMPLATES.length);
+  const tmpl = Q_TEMPLATES[tIdx];
+  let text, expected;
+  if(tmpl.type==='comparativa'){
+    const shuffled = [...concepts].sort(()=>Math.random()-0.5);
+    const c1=shuffled[0], c2=shuffled[1];
+    text = tmpl.gen(book.author, sec.name, c1, c2);
+    expected = [c1, c2, ...concepts.slice(0,3)];
+  } else if(tmpl.type==='argumentativa'){
+    text = tmpl.gen(book.author, sec.name);
+    expected = concepts.slice(0, Math.min(5, concepts.length));
+  } else {
+    const c = concepts[Math.floor(Math.random()*concepts.length)];
+    text = tmpl.gen(book.author, sec.name, c);
+    expected = [c, ...concepts.filter(x=>x!==c).slice(0,3)];
+  }
+  return { text, type:tmpl.type, typeLabel:tmpl.label, expectedConcepts:[...new Set(expected)],
+    bookId:book.id, sectionId:sec.id, bookTitle:book.title, sectionName:sec.name, author:book.author,
+    relations:sec.relations, allConcepts:sec.concepts };
+}
+
+// ===== EVALUATION =====
+function normalize(s){ return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
+function evaluateAnswer(answer, question){
+  const na = normalize(answer);
+  let score=0, maxScore=0, found=[], missing=[];
+  for(const c of question.expectedConcepts){
+    maxScore+=2;
+    if(na.includes(normalize(c))){ score+=2; found.push(c); } else { missing.push(c); }
+  }
+  let argCount=0;
+  for(const m of ARG_MARKERS){ if(na.includes(m)) argCount++; }
+  maxScore+=4; score+=Math.min(argCount,4);
+  maxScore+=3;
+  if(answer.length>300) score+=3; else if(answer.length>150) score+=2; else if(answer.length>50) score+=1;
+  const pct = maxScore>0 ? Math.round((score/maxScore)*100) : 0;
+  let level,levelLabel;
+  if(pct>=80){level='excelente';levelLabel='Excelente';}
+  else if(pct>=60){level='buena';levelLabel='Buena';}
+  else if(pct>=40){level='regular';levelLabel='Regular';}
+  else{level='insuficiente';levelLabel='Insuficiente';}
+  return { score:pct, level, levelLabel, found, missing, needsMap:pct<40 };
+}
+
+// ===== SPACED REPETITION =====
+function addToReview(question, score){
+  const interval = score>=80?7:score>=60?3:1;
+  const next = new Date(); next.setDate(next.getDate()+interval);
+  state.reviewQueue.push({ question, nextReview:next.toISOString(), interval });
+  saveState();
+}
+function getDueReviews(){
+  const now = new Date().toISOString();
+  return state.reviewQueue.filter(r=>r.nextReview<=now);
+}
+
+// ===== SPEECH =====
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang='es-AR'; u.rate=0.9;
+  const voices = speechSynthesis.getVoices();
+  const esVoice = voices.find(v=>v.lang.startsWith('es'));
+  if(esVoice) u.voice=esVoice;
+  speechSynthesis.speak(u);
+}
+
+let recognition=null;
+function toggleMic(){
+  if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){
+    alert('Tu navegador no soporta reconocimiento de voz. Usá Chrome.');
+    return;
+  }
+  if(state.isRecording && recognition){ recognition.stop(); return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang='es-AR'; recognition.continuous=true; recognition.interimResults=true;
+  const ta = document.getElementById('answerInput');
+  let finalT = ta.value;
+  recognition.onresult = (e)=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      if(e.results[i].isFinal) finalT += ' '+e.results[i][0].transcript;
+      else interim = e.results[i][0].transcript;
+    }
+    ta.value = (finalT+' '+interim).trim();
+  };
+  recognition.onend=()=>{ state.isRecording=false; updateMicBtn(); };
+  recognition.onerror=()=>{ state.isRecording=false; updateMicBtn(); };
+  recognition.start();
+  state.isRecording=true;
+  updateMicBtn();
+}
+function updateMicBtn(){
+  const btn=document.getElementById('micBtn');
+  if(btn){ btn.className=state.isRecording?'mic-btn recording':'mic-btn'; btn.textContent=state.isRecording?'⏹':'🎙'; }
+}
+
+// ===== CONCEPT MAP =====
+function renderConceptMap(concepts, relations){
+  const nodes = concepts.slice(0,10);
+  const w=700, h=400, cx=w/2, cy=h/2, r=140;
+  let svg = `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:700px;">`;
+  svg += `<defs><marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#718096"/></marker></defs>`;
+  const pos = nodes.map((n,i)=>{
+    const angle = (2*Math.PI*i/nodes.length)-Math.PI/2;
+    return { x:cx+r*Math.cos(angle), y:cy+r*Math.sin(angle), label:n };
+  });
+  // Draw relations
+  for(const [from,rel,to] of relations){
+    const fi=nodes.indexOf(from), ti=nodes.indexOf(to);
+    if(fi>=0&&ti>=0){
+      const p1=pos[fi],p2=pos[ti];
+      const mx=(p1.x+p2.x)/2, my=(p1.y+p2.y)/2;
+      svg+=`<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#cbd5e0" stroke-width="1.5" marker-end="url(#ah)"/>`;
+      svg+=`<text x="${mx}" y="${my-6}" text-anchor="middle" fill="#718096" font-size="10" font-style="italic">${rel}</text>`;
+    }
+  }
+  // Draw nodes
+  for(const p of pos){
+    const tw=p.label.length*7+16;
+    svg+=`<rect x="${p.x-tw/2}" y="${p.y-14}" width="${tw}" height="28" rx="14" fill="#1a365d" stroke="#b8860b" stroke-width="1.5"/>`;
+    svg+=`<text x="${p.x}" y="${p.y+5}" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">${p.label}</text>`;
+  }
+  svg+='</svg>';
+  return svg;
+}
+
+// ===== RENDERING =====
+function showView(v){
+  state.view=v;
+  document.querySelectorAll('#mainNav button').forEach((b,i)=>{
+    b.className = ['estudio','biblioteca','informes'][i]===v?'active':'';
+  });
+  document.getElementById('viewEstudio').className = v==='estudio'?'':'hidden';
+  document.getElementById('viewBiblioteca').className = v==='biblioteca'?'':'hidden';
+  document.getElementById('viewInformes').className = v==='informes'?'':'hidden';
+  if(v==='estudio') renderEstudio();
+  else if(v==='biblioteca') renderBiblioteca();
+  else renderInformes();
+}
+
+function renderEstudio(){
+  const el = document.getElementById('viewEstudio');
+  const due = getDueReviews();
+  let html='';
+  if(due.length){
+    html+=`<div class="review-alert">⏰ Tenés <strong>${due.length}</strong> pregunta(s) pendientes de repaso espaciado. <button class="btn btn-sm btn-accent" onclick="startReview()">Repasar</button></div>`;
+  }
+  // Book/section selector
+  html+=`<div class="card"><h2>Seleccionar tema de estudio</h2>`;
+  html+=`<div class="form-group"><label>Libro</label><select id="bookSelect" onchange="onBookChange()"><option value="">— Elegí un libro —</option>`;
+  for(const b of state.books) html+=`<option value="${b.id}">${b.title} — ${b.author}</option>`;
+  html+=`</select></div>`;
+  html+=`<div class="form-group"><label>Sección</label><select id="sectionSelect" disabled><option value="">— Primero elegí un libro —</option></select></div>`;
+  html+=`<button class="btn btn-primary" onclick="startQuestion()" id="startBtn" disabled>Generar pregunta</button>`;
+  html+=`</div>`;
+  // Question area
+  html+=`<div id="questionArea"></div>`;
+  el.innerHTML=html;
+}
+
+function onBookChange(){
+  const sel = document.getElementById('bookSelect').value;
+  const secSel = document.getElementById('sectionSelect');
+  const startBtn = document.getElementById('startBtn');
+  if(!sel){ secSel.innerHTML='<option value="">— Primero elegí un libro —</option>'; secSel.disabled=true; startBtn.disabled=true; return; }
+  const book = state.books.find(b=>b.id===sel);
+  secSel.innerHTML='<option value="">— Elegí una sección —</option>';
+  for(const s of book.sections) secSel.innerHTML+=`<option value="${s.id}">${s.name}</option>`;
+  secSel.disabled=false;
+  secSel.onchange=()=>{ startBtn.disabled=!secSel.value; };
+}
+
+function startQuestion(reviewQ){
+  let q;
+  if(reviewQ){ q=reviewQ; }
+  else {
+    const bookId=document.getElementById('bookSelect').value;
+    const secId=document.getElementById('sectionSelect').value;
+    if(!bookId||!secId) return;
+    const book=state.books.find(b=>b.id===bookId);
+    q=generateQuestion(book,secId);
+  }
+  if(!q) return;
+  state.currentQ=q;
+  const area=document.getElementById('questionArea');
+  area.innerHTML=`
+    <div class="question-box">
+      <div class="q-type">${q.typeLabel}</div>
+      <p>${q.text}</p>
+      <button class="speak-btn" onclick="speak(state.currentQ.text)">🔊 Escuchar</button>
+    </div>
+    <div class="card">
+      <h3>Tu respuesta</h3>
+      <div class="answer-area form-group">
+        <textarea id="answerInput" placeholder="Escribí tu respuesta aquí, o usá el micrófono..."></textarea>
+        <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Micrófono">🎙</button>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="submitAnswer()">Evaluar respuesta</button>
+        <button class="btn btn-outline" onclick="skipQuestion()">No sé / Saltar</button>
+      </div>
+      <div id="evalResult"></div>
+    </div>`;
+}
+
+function startReview(){
+  const due=getDueReviews();
+  if(!due.length) return;
+  const item=due[0];
+  state.reviewQueue = state.reviewQueue.filter(r=>r!==item);
+  saveState();
+  startQuestion(item.question);
+}
+
+function submitAnswer(){
+  const answer = document.getElementById('answerInput').value.trim();
+  if(!answer){ document.getElementById('answerInput').focus(); return; }
+  const q=state.currentQ;
+  const ev=evaluateAnswer(answer,q);
+  // Save session
+  state.sessions.push({
+    date:new Date().toISOString(), bookTitle:q.bookTitle, sectionName:q.sectionName,
+    author:q.author, questionType:q.typeLabel, question:q.text, answer,
+    score:ev.score, level:ev.level, foundConcepts:ev.found, missingConcepts:ev.missing,
+    neededMap:ev.needsMap
+  });
+  addToReview(q,ev.score);
+  saveState();
+  showEvaluation(ev,q);
+}
+
+function skipQuestion(){
+  const q=state.currentQ;
+  state.sessions.push({
+    date:new Date().toISOString(), bookTitle:q.bookTitle, sectionName:q.sectionName,
+    author:q.author, questionType:q.typeLabel, question:q.text, answer:'[Sin respuesta]',
+    score:0, level:'insuficiente', foundConcepts:[], missingConcepts:q.expectedConcepts,
+    neededMap:true
+  });
+  addToReview(q,0);
+  saveState();
+  const ev={score:0,level:'insuficiente',levelLabel:'Sin respuesta',found:[],missing:q.expectedConcepts,needsMap:true};
+  showEvaluation(ev,q);
+}
+
+function showEvaluation(ev,q){
+  const el=document.getElementById('evalResult');
+  const colors={excelente:'var(--success)',buena:'#2563eb',regular:'var(--warning)',insuficiente:'var(--danger)'};
+  let html=`<div class="eval-result eval-${ev.level}">
+    <h3 style="color:${colors[ev.level]}">${ev.levelLabel} — ${ev.score}%</h3>
+    <p style="margin-bottom:8px"><strong>Conceptos identificados:</strong> ${ev.found.length?ev.found.join(', '):'ninguno'}</p>
+    ${ev.missing.length?`<p><strong>Conceptos faltantes:</strong> ${ev.missing.join(', ')}</p>`:''}
+  </div>`;
+  if(ev.needsMap){
+    html+=`<div class="concept-map"><h3>Mapa conceptual — ${q.sectionName}</h3>
+      <p style="font-size:0.85em;color:var(--muted);margin-bottom:12px">Estudiá este mapa para recordar los conceptos clave y sus relaciones.</p>
+      ${renderConceptMap(q.allConcepts, q.relations)}</div>`;
+  }
+  html+=`<div style="margin-top:16px"><button class="btn btn-primary" onclick="startQuestion()">Siguiente pregunta</button></div>`;
+  el.innerHTML=html;
+}
+
+// ===== BIBLIOTECA =====
+function renderBiblioteca(){
+  const el=document.getElementById('viewBiblioteca');
+  let html=`<div class="card"><h2>Biblioteca</h2><p style="color:var(--muted);margin-bottom:16px">Libros cargados para el estudio. Podés agregar nuevos.</p>`;
+  for(const b of state.books){
+    html+=`<div class="book-item"><div class="info"><h3>${b.title}</h3><p>${b.author} — ${b.sections.length} secciones</p>
+      <ul class="section-list">${b.sections.map(s=>`<li>${s.name} <span style="color:var(--muted);font-size:0.8em">(${s.concepts.length} conceptos)</span></li>`).join('')}</ul>
+    </div></div>`;
+  }
+  html+=`</div>`;
+  // Add book form
+  html+=`<div class="card"><h2>Agregar libro</h2>
+    <div class="form-group"><label>Título</label><input type="text" id="newBookTitle" placeholder="Título del libro"></div>
+    <div class="form-group"><label>Autor</label><input type="text" id="newBookAuthor" placeholder="Nombre del autor"></div>
+    <div class="form-group"><label>Secciones (una por línea, formato: Nombre | concepto1, concepto2, concepto3)</label>
+      <textarea id="newBookSections" placeholder="Parte I: Introducción | concepto1, concepto2, concepto3&#10;Parte II: Desarrollo | concepto4, concepto5, concepto6" style="min-height:150px"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="addBook()">Agregar libro</button>
+  </div>`;
+  el.innerHTML=html;
+}
+
+function addBook(){
+  const title=document.getElementById('newBookTitle').value.trim();
+  const author=document.getElementById('newBookAuthor').value.trim();
+  const secText=document.getElementById('newBookSections').value.trim();
+  if(!title||!author||!secText) return;
+  const sections=[];
+  for(const line of secText.split('\n')){
+    const parts=line.split('|');
+    const name=parts[0].trim();
+    const concepts=parts[1]?parts[1].split(',').map(c=>c.trim()).filter(c=>c):[];
+    if(name) sections.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name, concepts, relations:[] });
+  }
+  if(!sections.length) return;
+  // Generate basic relations from concepts
+  for(const sec of sections){
+    for(let i=0;i<sec.concepts.length-1;i+=2){
+      if(sec.concepts[i+1]) sec.relations.push([sec.concepts[i],'se relaciona con',sec.concepts[i+1]]);
+    }
+  }
+  state.books.push({ id:'b'+Date.now(), title, author, sections });
+  saveState();
+  renderBiblioteca();
+}
+
+// ===== INFORMES =====
+function renderInformes(){
+  const el=document.getElementById('viewInformes');
+  const ss=state.sessions;
+  let html=`<div class="tab-sub">
+    <button class="${state.subTab==='historial'?'active':''}" onclick="state.subTab='historial';renderInformes()">Historial</button>
+    <button class="${state.subTab==='metricas'?'active':''}" onclick="state.subTab='metricas';renderInformes()">Métricas</button>
+    <button class="${state.subTab==='tipos'?'active':''}" onclick="state.subTab='tipos';renderInformes()">Por tipo</button>
+    <button class="${state.subTab==='libros'?'active':''}" onclick="state.subTab='libros';renderInformes()">Por libro</button>
+  </div>`;
+  if(!ss.length){
+    html+=`<div class="card empty-state"><h3>Sin datos aún</h3><p>Respondé preguntas en la sección Estudio para generar informes.</p></div>`;
+    el.innerHTML=html; return;
+  }
+  if(state.subTab==='historial') html+=renderHistorial(ss);
+  else if(state.subTab==='metricas') html+=renderMetricas(ss);
+  else if(state.subTab==='tipos') html+=renderPorTipo(ss);
+  else html+=renderPorLibro(ss);
+  html+=`<div class="card"><button class="btn btn-danger btn-sm" onclick="if(confirm('¿Borrar todo el historial?')){state.sessions=[];state.reviewQueue=[];saveState();renderInformes();}">Limpiar historial</button></div>`;
+  el.innerHTML=html;
+}
+
+function renderHistorial(ss){
+  let html=`<div class="card"><h2>Historial de sesiones</h2>`;
+  const sorted=[...ss].reverse().slice(0,50);
+  for(const s of sorted){
+    const dotColor={excelente:'var(--success)',buena:'#2563eb',regular:'var(--warning)',insuficiente:'var(--danger)'}[s.level];
+    const d=new Date(s.date);
+    html+=`<div class="history-item">
+      <div class="dot" style="background:${dotColor}"></div>
+      <div class="content">
+        <div class="flex-between"><strong style="font-size:0.9em">${s.question}</strong>
+          <span class="badge badge-${s.level==='excelente'?'green':s.level==='buena'?'blue':s.level==='regular'?'gold':'red'}">${s.score}%</span></div>
+        <div class="meta">${s.bookTitle} — ${s.sectionName}</div>
+        <div class="tag-row" style="margin-top:4px"><span class="badge badge-purple">${s.questionType}</span></div>
+        <p style="font-size:0.85em;color:var(--text);margin-top:4px"><em>"${s.answer.slice(0,150)}${s.answer.length>150?'...':''}"</em></p>
+      </div>
+    </div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+function renderMetricas(ss){
+  const total=ss.length;
+  const avg=Math.round(ss.reduce((a,s)=>a+s.score,0)/total);
+  const mapNeeded=ss.filter(s=>s.neededMap).length;
+  const levels={excelente:0,buena:0,regular:0,insuficiente:0};
+  ss.forEach(s=>levels[s.level]++);
+  let html=`<div class="card"><h2>Métricas generales</h2>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="num">${total}</div><div class="lbl">Preguntas</div></div>
+      <div class="stat-card"><div class="num">${avg}%</div><div class="lbl">Promedio</div></div>
+      <div class="stat-card"><div class="num">${levels.excelente}</div><div class="lbl">Excelentes</div></div>
+      <div class="stat-card"><div class="num">${mapNeeded}</div><div class="lbl">Requirió mapa</div></div>
+    </div>
+    <h3>Distribución de resultados</h3>
+    <div class="chart-bar-container">
+      <div class="chart-bar"><span class="label">Excelente</span><div class="bar-bg"><div class="bar-fill" style="width:${(levels.excelente/total*100)}%;background:var(--success)"></div></div><span class="val">${levels.excelente}</span></div>
+      <div class="chart-bar"><span class="label">Buena</span><div class="bar-bg"><div class="bar-fill" style="width:${(levels.buena/total*100)}%;background:#2563eb"></div></div><span class="val">${levels.buena}</span></div>
+      <div class="chart-bar"><span class="label">Regular</span><div class="bar-bg"><div class="bar-fill" style="width:${(levels.regular/total*100)}%;background:var(--warning)"></div></div><span class="val">${levels.regular}</span></div>
+      <div class="chart-bar"><span class="label">Insuficiente</span><div class="bar-bg"><div class="bar-fill" style="width:${(levels.insuficiente/total*100)}%;background:var(--danger)"></div></div><span class="val">${levels.insuficiente}</span></div>
+    </div>
+  </div>`;
+  // Evolution over time (last 20)
+  const last20=ss.slice(-20);
+  if(last20.length>1){
+    html+=`<div class="card"><h3>Evolución (últimas ${last20.length} preguntas)</h3>
+      <svg viewBox="0 0 600 200" style="width:100%;max-width:600px;" xmlns="http://www.w3.org/2000/svg">
+        <rect width="600" height="200" fill="var(--light)" rx="8"/>`;
+    const pw=560/(last20.length-1);
+    let points='';
+    last20.forEach((s,i)=>{
+      const x=20+i*pw, y=180-s.score*1.6;
+      points+=`${x},${y} `;
+      html+=`<circle cx="${x}" cy="${y}" r="4" fill="${s.score>=80?'var(--success)':s.score>=60?'#2563eb':s.score>=40?'var(--warning)':'var(--danger)'}"/>`;
+    });
+    html+=`<polyline points="${points}" fill="none" stroke="var(--primary)" stroke-width="2" opacity="0.5"/>`;
+    html+=`<line x1="20" y1="${180-40*1.6}" x2="580" y2="${180-40*1.6}" stroke="#e2d9cc" stroke-dasharray="4"/>`;
+    html+=`<text x="585" y="${180-40*1.6+4}" font-size="10" fill="var(--muted)">40%</text>`;
+    html+=`<line x1="20" y1="${180-80*1.6}" x2="580" y2="${180-80*1.6}" stroke="#e2d9cc" stroke-dasharray="4"/>`;
+    html+=`<text x="585" y="${180-80*1.6+4}" font-size="10" fill="var(--muted)">80%</text>`;
+    html+=`</svg></div>`;
+  }
+  return html;
+}
+
+function renderPorTipo(ss){
+  const types={};
+  ss.forEach(s=>{ if(!types[s.questionType]) types[s.questionType]={total:0,sum:0}; types[s.questionType].total++; types[s.questionType].sum+=s.score; });
+  let html=`<div class="card"><h2>Rendimiento por tipo de pregunta</h2>
+    <p style="color:var(--muted);font-size:0.9em;margin-bottom:16px">Muestra en qué tipo de razonamiento rendís mejor.</p>
+    <div class="chart-bar-container">`;
+  for(const [type,data] of Object.entries(types)){
+    const avg=Math.round(data.sum/data.total);
+    const color=avg>=80?'var(--success)':avg>=60?'#2563eb':avg>=40?'var(--warning)':'var(--danger)';
+    html+=`<div class="chart-bar"><span class="label">${type}</span><div class="bar-bg"><div class="bar-fill" style="width:${avg}%;background:${color}"></div></div><span class="val">${avg}% (${data.total})</span></div>`;
+  }
+  html+=`</div></div>`;
+  return html;
+}
+
+function renderPorLibro(ss){
+  const books={};
+  ss.forEach(s=>{ if(!books[s.bookTitle]) books[s.bookTitle]={total:0,sum:0,sections:{}}; books[s.bookTitle].total++; books[s.bookTitle].sum+=s.score;
+    if(!books[s.bookTitle].sections[s.sectionName]) books[s.bookTitle].sections[s.sectionName]={total:0,sum:0};
+    books[s.bookTitle].sections[s.sectionName].total++; books[s.bookTitle].sections[s.sectionName].sum+=s.score;
+  });
+  let html='';
+  for(const [book,data] of Object.entries(books)){
+    const avg=Math.round(data.sum/data.total);
+    html+=`<div class="card"><h2>${book}</h2>
+      <p style="margin-bottom:12px">Promedio: <strong>${avg}%</strong> — ${data.total} preguntas</p>
+      <div class="chart-bar-container">`;
+    for(const [sec,sd] of Object.entries(data.sections)){
+      const sa=Math.round(sd.sum/sd.total);
+      const color=sa>=80?'var(--success)':sa>=60?'#2563eb':sa>=40?'var(--warning)':'var(--danger)';
+      html+=`<div class="chart-bar"><span class="label" style="width:200px;font-size:0.8em">${sec}</span><div class="bar-bg"><div class="bar-fill" style="width:${sa}%;background:${color}"></div></div><span class="val">${sa}%</span></div>`;
+    }
+    html+=`</div></div>`;
+  }
+  return html;
+}
+
+// ===== INIT =====
+loadState();
+if('speechSynthesis' in window) speechSynthesis.getVoices();
+showView('estudio');
+</script>
+</body>
+</html>
