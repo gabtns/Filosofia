@@ -538,8 +538,8 @@ function renderBiblioteca(){
   html+=`<div class="card"><h2>Agregar libro</h2>
     <div class="form-group"><label>Título</label><input type="text" id="newBookTitle" placeholder="Título del libro"></div>
     <div class="form-group"><label>Autor</label><input type="text" id="newBookAuthor" placeholder="Nombre del autor"></div>
-    <div class="form-group"><label>Secciones (una por línea, formato: Nombre | concepto1, concepto2, concepto3)</label>
-      <textarea id="newBookSections" placeholder="Parte I: Introducción | concepto1, concepto2, concepto3&#10;Parte II: Desarrollo | concepto4, concepto5, concepto6" style="min-height:150px"></textarea>
+    <div class="form-group"><label>Secciones / Capítulos (uno por línea)</label>
+      <textarea id="newBookSections" placeholder="Parte I: Introducción&#10;Parte II: Desarrollo&#10;Capítulo III: Conclusiones" style="min-height:150px"></textarea>
     </div>
     <button class="btn btn-primary" onclick="addBook()">Agregar libro</button>
   </div>`;
@@ -553,18 +553,10 @@ function addBook(){
   if(!title||!author||!secText) return;
   const sections=[];
   for(const line of secText.split('\n')){
-    const parts=line.split('|');
-    const name=parts[0].trim();
-    const concepts=parts[1]?parts[1].split(',').map(c=>c.trim()).filter(c=>c):[];
-    if(name) sections.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name, concepts, relations:[] });
+    const name=line.trim();
+    if(name) sections.push({ id:'s'+Date.now()+Math.random().toString(36).slice(2,6), name, concepts:[], relations:[] });
   }
   if(!sections.length) return;
-  // Generate basic relations from concepts
-  for(const sec of sections){
-    for(let i=0;i<sec.concepts.length-1;i+=2){
-      if(sec.concepts[i+1]) sec.relations.push([sec.concepts[i],'se relaciona con',sec.concepts[i+1]]);
-    }
-  }
   state.books.push({ id:'b'+Date.now(), title, author, sections });
   saveState();
   renderBiblioteca();
